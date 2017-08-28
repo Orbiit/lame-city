@@ -24,4 +24,5 @@ window.addEventListener("load",e=>{
     else window.requestAnimationFrame(main);
   }
   window.requestAnimationFrame(main);
+  torender.push(new NPC("images/person1.png"));
 },false);

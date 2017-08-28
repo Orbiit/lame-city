@@ -20,7 +20,7 @@ window.addEventListener("load",e=>{
     if (e.altKey) keys.alt=true;
     if (e.shiftKey) keys.shift=true;
   },false);
-  document.addEventListener("keydown",e=>{
+  document.addEventListener("keyup",e=>{
     keys[e.keyCode]=false;
     if (!(e.ctrlKey||e.metalKey)) keys.ctrl=false;
     if (!e.altKey) keys.alt=false;
