@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Isometric grid selector</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Selects a tile on a 30° isometric grid."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="css/canvas.css">
+    <script src="js/canvas.js" charset="utf-8"></script>
+    <style>
+      body {
+        background-color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+const canvas = document.querySelector("#canvas"),
+c = canvas.getContext("2d"),
+mouse = {x: 0, y: 0},
+scroll = {x: 0, y: 0},
+tileSize = 20,
+tileWidth = tileSize * Math.sqrt(3) / 2,
+tileHeight = tileSize / 2;
+document.addEventListener("mousemove", e => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+}, false);
+function isoToMouse(isoX, isoY) {
+  return [(isoX - isoY) * tileWidth, (isoX + isoY) * tileHeight];
+}
+function mouseToIso(mouseX, mouseY) {
+  return [(mouseY / tileHeight + mouseX / tileWidth) / 2, (mouseY / tileHeight - mouseX / tileWidth) / 2];
+}
+function draw() {
+  c.fillStyle = "rgba(255,255,255,0.1)";
+  c.fillRect(0, 0, innerWidth, innerHeight);
+  let [isoX, isoY] = mouseToIso(mouse.x, mouse.y).map(Math.floor);
+  c.fillStyle = "#03A9F4";
+  c.beginPath();
+  c.moveTo(...isoToMouse(isoX, isoY));
+  c.lineTo(...isoToMouse(isoX + 1, isoY));
+  c.lineTo(...isoToMouse(isoX + 1, isoY + 1));
+  c.lineTo(...isoToMouse(isoX, isoY + 1));
+  c.fill();
+  c.fillStyle = "black";
+  c.font = "12px sans-serif";
+  c.fillText(`${isoX}, ${isoY}`, mouse.x, mouse.y);
+  window.requestAnimationFrame(draw);
+}
+draw();
+    </script>
+  </body>
+  <!-- MADE BY SEAN -->
+</html>
