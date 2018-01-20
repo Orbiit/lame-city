@@ -28,11 +28,16 @@ document.addEventListener("mousemove", e => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
 }, false);
+document.addEventListener("touchmove", e => {
+  mouse.x = e.touches[0].clientX;
+  mouse.y = e.touches[0].clientY;
+}, false);
 function isoToMouse(isoX, isoY) {
-  return [(isoX - isoY) * tileWidth, (isoX + isoY) * tileHeight];
+  return [(isoX - isoY) * tileWidth - scroll.x, (isoX + isoY) * tileHeight + scroll.y];
 }
 function mouseToIso(mouseX, mouseY) {
-  return [(mouseY / tileHeight + mouseX / tileWidth) / 2, (mouseY / tileHeight - mouseX / tileWidth) / 2];
+  let x = (mouseX + scroll.x) / tileWidth, y = (mouseY + scroll.y) / tileHeight;
+  return [(y + x) / 2, (y - x) / 2];
 }
 function draw() {
   c.fillStyle = "rgba(255,255,255,0.1)";
