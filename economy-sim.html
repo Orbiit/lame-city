@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Economy Simulator - Lame City</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="monetary unit exchanges; testing a system for the actual game"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style></style>
+  </head>
+  <body>
+    <p>you have <strong id="mudisplay"></strong> monetary unit(s)</p>
+    <h2>shop</h2>
+    <dl>
+      <dt>haus simple - 100 MU <button data-buys="simplehouse">purchase</button></dt>
+      <dd>good starter house - is taxed 10 MU / min</dd>
+      <dt>domus kompleks - 500 MU <button data-buys="complexhouse">purchase</button></dt>
+      <dd>fits some more people - is taxed 30 MU / min</dd>
+    </dl>
+    <h2>ur city</h2>
+    <ul id="inv"></ul>
+
+    <script>
+const muDisplay = document.querySelector("#mudisplay"),
+inventoryList = document.querySelector("#inv");
+let monetaryUnits = 150,
+inventory = {};
+function updateMUDisplay() {
+  muDisplay.textContent = monetaryUnits;
+}
+function updateInventory() {
+  let innerHTML = "";
+  for (let building in inventory) {
+    innerHTML += `<li>${inventory[building]}x ${building}</li>`;
+  }
+  inventoryList.innerHTML = innerHTML;
+}
+updateMUDisplay();
+updateInventory();
+    </script>
+  </body>
+  <!-- MADE BY SEAN -->
+</html>
