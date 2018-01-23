@@ -8,13 +8,14 @@
     <style></style>
   </head>
   <body>
-    <p>you have <strong id="mudisplay"></strong> monetary unit(s). you earn <strong id="rate"></strong> MU / min</p>
+    <p>you have <strong id="mudisplay"></strong> monetary unit(s). you earn <strong id="rate"></strong> MU / min. population: <strong id="pop"></strong></p>
+    <p>you can beg in the nearby cities to get some free MU <button id="beg">beg</button></p>
     <h2>shop</h2>
     <dl>
-      <dt>haus simple - 100 MU <button class="purchase" data-buys="simpleHouse" data-price="100" data-earn="10">purchase</button></dt>
-      <dd>good starter house - is taxed 10 MU / min</dd>
-      <dt>domus kompleks - 500 MU <button class="purchase" data-buys="complexHouse" data-price="500" data-earn="30">purchase</button></dt>
-      <dd>fits some more people - is taxed 30 MU / min</dd>
+      <dt>haus simple - 100 MU <button class="purchase" data-buys="simpleHouse" data-price="100" data-ppl="2">purchase</button></dt>
+      <dd>good starter house - stores 2 people</dd>
+      <dt>domus kompleks - 500 MU <button class="purchase" data-buys="complexHouse" data-price="500" data-ppl="4">purchase</button></dt>
+      <dd>fits some more people - 4 people can easily fit in it</dd>
     </dl>
     <h2>ur city</h2>
     <ul id="inv"></ul>
@@ -22,49 +23,125 @@
     <script>
 const muDisplay = document.querySelector("#mudisplay"),
 rateDisplay = document.querySelector("#rate"),
-inventoryList = document.querySelector("#inv");
+inventoryList = document.querySelector("#inv"),
+populationDisplay = document.querySelector("#pop"),
+begBtn = document.querySelector("#beg"),
+maleNames = ["Bob", "Sam", "Michael", "Bill", "William", "George", "Charles"],
+girlNames = ["Sally", "Linda", "Alice", "Julia", "Christina", "Monica"];
 let monetaryUnits = 150,
 inventory = {},
-muPerMin = 0;
-function updateMUDisplay() {
+muPerMin = 0,
+people = [],
+maxPeople = 0;
+function updateDisplay() {
   muDisplay.textContent = monetaryUnits;
   rate.textContent = muPerMin;
-}
-function updateInventory() {
+  populationDisplay.textContent = people.length;
+
   let innerHTML = "";
   for (let building in inventory) {
     innerHTML += `<li>${inventory[building]}x ${building}</li>`;
   }
+  innerHTML += `<li><strong>Your people:</strong> ${people.map(person => person.name).join(", ") || "nobody likes you"}</li>`;
   inventoryList.innerHTML = innerHTML;
 }
-updateMUDisplay();
-updateInventory();
+updateDisplay();
 let purchaseBtns = document.getElementsByClassName("purchase");
 for (let i = purchaseBtns.length; i--;) {
   let price = +purchaseBtns[i].dataset.price,
   buys = purchaseBtns[i].dataset.buys,
-  taxRate = +purchaseBtns[i].dataset.earn;
+  capacity = +purchaseBtns[i].dataset.ppl;
   purchaseBtns[i].addEventListener("click", e => {
     if (price <= monetaryUnits) {
       inventory[buys] = (inventory[buys] || 0) + 1;
       monetaryUnits -= price;
-      muPerMin += taxRate;
-      updateMUDisplay();
-      updateInventory();
+      maxPeople += capacity;
+      updateDisplay();
     } else {
       alert("u need " + (price - monetaryUnits) + " more MU to purchase");
     }
   }, false);
 }
+begBtn.addEventListener("click", e => {
+  if (Math.floor(Math.random() * 10) === 0) {
+    let person;
+    if (people.length > 0) {
+      person = people.splice(Math.floor(Math.random() * people.length), 1)[0];
+      muPerMin -= person.tax;
+    }
+    monetaryUnits -= 100;
+    updateDisplay();
+    alert(`The local law enforcement caught you begging. You had to pay a fine of 100 MU.`);
+    if (people.length > 0) alert(`Your popularity has decreased, and ${person.name} left, disappointed in you.`);
+  } else {
+    let begMU = Math.floor(Math.random() * 100);
+    monetaryUnits += begMU;
+    updateDisplay();
+    alert(`You earned ${begMU} MU from begging on the streets.`);
+  }
+}, false);
+function arrayFind(array, fn) {
+  for (let i = array.length; i--;) if (fn(array[i])) return array[i];
+  return null;
+}
+function makeName() {
+  let hasY = Math.floor(Math.random() * 2),
+  name;
+  if (hasY) name = maleNames[Math.floor(Math.random() * maleNames.length)];
+  else name = girlNames[Math.floor(Math.random() * girlNames.length)];
+  if (~people.indexOf(name)) name += " #" + (people.filter(a => a === name).length + 1);
+  return [name, hasY];
+}
 let lastTime = Date.now();
 console.log(setInterval(() => {
   let now = Date.now(),
   wouldEarn = muPerMin * (now - lastTime) / 60000;
-  if (wouldEarn >= 1) {
+  if (muPerMin === 0) {
+    lastTime = now;
+  } else if (wouldEarn >= 1) {
     monetaryUnits += Math.floor(wouldEarn);
-    updateMUDisplay();
-    updateInventory();
+    updateDisplay();
     lastTime = now - (wouldEarn % 1) * 60000 / muPerMin;
+  }
+  if (people.length < maxPeople) {
+    if (Math.floor(Math.random() * 2) === 0) {
+      let tax = Math.floor(Math.random() * 80),
+      [name, hasY] = makeName();
+      if (confirm(`${name} would like to be a citizen of your city.
+          They are willing to pay ${tax} MU / min.
+          Allow them to immigrate?`)) {
+        people.push({
+          name: name,
+          hasY: hasY,
+          wontReproduce: false,
+          tax: tax
+        });
+        muPerMin += tax;
+        updateDisplay();
+        return;
+      }
+    }
+    let male = arrayFind(people, a => a.hasY),
+    female = arrayFind(people, a => !a.hasY);
+    if (male && female) {
+      let [name, hasY] = makeName();
+      if (confirm(`${male.name} and ${female.name} have given birth to ${name}.
+          However, the newborn is unable to contribute to your wealth.
+          Kill?`)) {
+        male.wontReproduce = female.wontReproduce = true;
+        let person = people.splice(Math.floor(Math.random() * people.length), 1)[0];
+        muPerMin -= person.tax;
+        updateDisplay();
+        alert(`Your popularity has decreased, and ${person.name} left, disappointed in you.`);
+      } else {
+        people.push({
+          name: name,
+          hasY: hasY,
+          tax: 0
+        });
+        updateDisplay();
+      }
+    }
   }
 }, 1000));
     </script>
