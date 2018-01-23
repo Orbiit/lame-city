@@ -8,12 +8,12 @@
     <style></style>
   </head>
   <body>
-    <p>you have <strong id="mudisplay"></strong> monetary unit(s)</p>
+    <p>you have <strong id="mudisplay"></strong> monetary unit(s). you earn <strong id="rate"></strong> MU / min</p>
     <h2>shop</h2>
     <dl>
-      <dt>haus simple - 100 MU <button data-buys="simplehouse">purchase</button></dt>
+      <dt>haus simple - 100 MU <button class="purchase" data-buys="simpleHouse" data-price="100" data-earn="10">purchase</button></dt>
       <dd>good starter house - is taxed 10 MU / min</dd>
-      <dt>domus kompleks - 500 MU <button data-buys="complexhouse">purchase</button></dt>
+      <dt>domus kompleks - 500 MU <button class="purchase" data-buys="complexHouse" data-price="500" data-earn="30">purchase</button></dt>
       <dd>fits some more people - is taxed 30 MU / min</dd>
     </dl>
     <h2>ur city</h2>
@@ -21,11 +21,14 @@
 
     <script>
 const muDisplay = document.querySelector("#mudisplay"),
+rateDisplay = document.querySelector("#rate"),
 inventoryList = document.querySelector("#inv");
 let monetaryUnits = 150,
-inventory = {};
+inventory = {},
+muPerMin = 0;
 function updateMUDisplay() {
   muDisplay.textContent = monetaryUnits;
+  rate.textContent = muPerMin;
 }
 function updateInventory() {
   let innerHTML = "";
@@ -36,6 +39,34 @@ function updateInventory() {
 }
 updateMUDisplay();
 updateInventory();
+let purchaseBtns = document.getElementsByClassName("purchase");
+for (let i = purchaseBtns.length; i--;) {
+  let price = +purchaseBtns[i].dataset.price,
+  buys = purchaseBtns[i].dataset.buys,
+  taxRate = +purchaseBtns[i].dataset.earn;
+  purchaseBtns[i].addEventListener("click", e => {
+    if (price <= monetaryUnits) {
+      inventory[buys] = (inventory[buys] || 0) + 1;
+      monetaryUnits -= price;
+      muPerMin += taxRate;
+      updateMUDisplay();
+      updateInventory();
+    } else {
+      alert("u need " + (price - monetaryUnits) + " more MU to purchase");
+    }
+  }, false);
+}
+let lastTime = Date.now();
+console.log(setInterval(() => {
+  let now = Date.now(),
+  wouldEarn = muPerMin * (now - lastTime) / 60000;
+  if (wouldEarn >= 1) {
+    monetaryUnits += Math.floor(wouldEarn);
+    updateMUDisplay();
+    updateInventory();
+    lastTime = now - (wouldEarn % 1) * 60000 / muPerMin;
+  }
+}, 1000));
     </script>
   </body>
   <!-- MADE BY SEAN -->
