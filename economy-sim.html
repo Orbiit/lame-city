@@ -89,7 +89,7 @@ function makeName() {
   name;
   if (hasY) name = maleNames[Math.floor(Math.random() * maleNames.length)];
   else name = girlNames[Math.floor(Math.random() * girlNames.length)];
-  if (~people.indexOf(name)) name += " #" + (people.filter(a => a === name).length + 1);
+  if (~people.indexOf(name)) name += " #" + (people.filter(a => a.name === name).length + 1);
   return [name, hasY];
 }
 let lastTime = Date.now();
