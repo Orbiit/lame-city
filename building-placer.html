@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Building Placer - Lame City</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Place buildings on an isometric grid."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" type="text/css" href="css/canvas.css">
+    <script src="js/canvas.js" charset="utf-8"></script>
+    <script src="js/mouse.js" charset="utf-8"></script>
+    <style>
+      body {
+        background-color: #007f12;
+      }
+      img {
+        display: none;
+      }
+      .desc {
+        font-size: 16px;
+        font-family: sans-serif;
+        width: 100%;
+        text-align: center;
+        height: 1em;
+        padding: 1em 0;
+        margin: 0;
+        color: rgba(255,255,255,0.7);
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        background-image: linear-gradient(0deg, rgba(0,0,0,0.5), transparent);
+        opacity: 0.5;
+        transition: opacity .2s;
+      }
+      .desc:hover {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <img src="images/housesimple.svg" id="simplehouse">
+    <img src="images/tree.svg" id="tree">
+    <p class="desc">Click to place; scroll to select building</p>
+
+    <script>
+const canvas = document.querySelector("#canvas"),
+c = canvas.getContext("2d"),
+tileSize = 20,
+tileWidth = tileSize * Math.sqrt(3) / 2,
+tileHeight = tileSize / 2,
+buildings = {
+  "simple-house": {
+    image: document.querySelector("#simplehouse"),
+    xSize: 1,
+    ySize: 1
+  },
+  "pine-tree": {
+    image: document.querySelector("#tree"),
+    xSize: 1,
+    ySize: 1
+  }
+},
+buildingTypes = Object.keys(buildings);
+let mouse = {x: 0, y: 0, down : false},
+scroll = {x: 0, y: 0},
+placedBuildings = {},
+selectedBuilding = "simple-house";
+pointerFns(
+  () => mouse.down = true,
+  (x, y) => (mouse.x = x, mouse.y = y),
+  () => mouse.down = false,
+  false
+);
+document.addEventListener("wheel", e => {
+  if (e.deltaY > 0) {
+    selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + 1) % buildingTypes.length];
+  } else {
+    selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + buildingTypes.length - 1) % buildingTypes.length];
+  }
+}, false);
+function isoToMouse(isoX, isoY) {
+  return [(isoX - isoY) * tileWidth - scroll.x, (isoX + isoY) * tileHeight - scroll.y];
+}
+function mouseToIso(mouseX, mouseY) {
+  let x = (mouseX + scroll.x) / tileWidth, y = (mouseY + scroll.y) / tileHeight;
+  return [(y + x) / 2, (y - x) / 2];
+}
+function drawBuilding(buildingType, isoX, isoY) {
+  let buildingInfo = buildings[buildingType],
+  img = buildingInfo.image,
+  left = isoToMouse(isoX, isoY + buildingInfo.ySize)[0],
+  bottom = isoToMouse(isoX + buildingInfo.xSize, isoY + buildingInfo.ySize)[1],
+  width = isoToMouse(isoX + buildingInfo.xSize, isoY)[0] - left,
+  height = width / img.width * img.height;
+  c.drawImage(img, left, bottom - height, width, height);
+}
+function drawBuildings() {
+  let [initIsoX, initIsoY] = mouseToIso(0, 0).map(Math.floor),
+  width = Math.ceil(window.innerWidth / tileWidth / 2),
+  height = Math.ceil(window.innerHeight / tileHeight);
+  for (let y = 0, isoX, isoY; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      isoX = initIsoX + x + Math.floor(y / 2) + y % 2;
+      isoY = initIsoY - x + Math.floor(y / 2);
+      if (placedBuildings[`${isoX},${isoY}`]) {
+        drawBuilding(placedBuildings[`${isoX},${isoY}`].type, isoX, isoY);
+      }
+    }
+  }
+}
+function draw() {
+  c.clearRect(0, 0, innerWidth, innerHeight);
+  if (mouse.x / window.innerWidth <= 0.1) scroll.x -= 5;
+  else if (mouse.x / window.innerWidth >= 0.9) scroll.x += 5;
+  if (mouse.y / window.innerHeight <= 0.1) scroll.y -= 5;
+  else if (mouse.y / window.innerHeight >= 0.9) scroll.y += 5;
+  drawBuildings();
+  if (selectedBuilding) {
+    let [isoX, isoY] = mouseToIso(mouse.x, mouse.y).map(Math.floor);
+    if (mouse.down && !placedBuildings[`${isoX},${isoY}`]) {
+      placedBuildings[`${isoX},${isoY}`] = {type: selectedBuilding};
+    }
+    c.globalAlpha = 0.5;
+    drawBuilding(selectedBuilding, isoX, isoY);
+    c.globalAlpha = 1;
+  }
+  window.requestAnimationFrame(draw);
+}
+draw();
+    </script>
+  </body>
+  <!-- MADE BY SEAN -->
+</html>
