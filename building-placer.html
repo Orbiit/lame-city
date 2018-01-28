@@ -40,12 +40,13 @@
     <canvas id="canvas"></canvas>
     <img src="images/housesimple.svg" id="simplehouse">
     <img src="images/tree.svg" id="tree">
-    <p class="desc">Click to place; scroll to select building</p>
+    <img src="images/pond.svg" id="pond">
+    <p class="desc">Click to place; left/right arrow keys to select building</p>
 
     <script>
 const canvas = document.querySelector("#canvas"),
 c = canvas.getContext("2d"),
-tileSize = 20,
+tileSize = 40,
 tileWidth = tileSize * Math.sqrt(3) / 2,
 tileHeight = tileSize / 2,
 buildings = {
@@ -58,9 +59,15 @@ buildings = {
     image: document.querySelector("#tree"),
     xSize: 1,
     ySize: 1
+  },
+  "rock-pond": {
+    image: document.querySelector("#pond"),
+    xSize: 2,
+    ySize: 2
   }
 },
 buildingTypes = Object.keys(buildings);
+buildingTypes.push("_remove_");
 let mouse = {x: 0, y: 0, down : false},
 scroll = {x: 0, y: 0},
 placedBuildings = {},
@@ -71,11 +78,14 @@ pointerFns(
   () => mouse.down = false,
   false
 );
-document.addEventListener("wheel", e => {
-  if (e.deltaY > 0) {
-    selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + 1) % buildingTypes.length];
-  } else {
-    selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + buildingTypes.length - 1) % buildingTypes.length];
+document.addEventListener("keydown", e => {
+  switch (e.keyCode) {
+    case 37:
+      selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + buildingTypes.length - 1) % buildingTypes.length];
+      break;
+    case 39:
+      selectedBuilding = buildingTypes[(buildingTypes.indexOf(selectedBuilding) + 1) % buildingTypes.length];
+      break;
   }
 }, false);
 function isoToMouse(isoX, isoY) {
@@ -98,15 +108,24 @@ function drawBuildings() {
   let [initIsoX, initIsoY] = mouseToIso(0, 0).map(Math.floor),
   width = Math.ceil(window.innerWidth / tileWidth / 2),
   height = Math.ceil(window.innerHeight / tileHeight);
-  for (let y = 0, isoX, isoY; y < height; y++) {
+  for (let y = 0, isoX, isoY, stringPos; y < height; y++) {
     for (let x = 0; x < width; x++) {
       isoX = initIsoX + x + Math.floor(y / 2) + y % 2;
       isoY = initIsoY - x + Math.floor(y / 2);
-      if (placedBuildings[`${isoX},${isoY}`]) {
-        drawBuilding(placedBuildings[`${isoX},${isoY}`].type, isoX, isoY);
+      stringPos = `${isoX},${isoY}`;
+      if (placedBuildings[stringPos] && !placedBuildings[stringPos].partOf) {
+        drawBuilding(placedBuildings[stringPos].type, isoX, isoY);
       }
     }
   }
+}
+function noBuildingsInWay(isoX, isoY, xSize, ySize) {
+  for (let x = 0; x < xSize; x++) {
+    for (let y = 0; y < ySize; y++) {
+      if (placedBuildings[`${isoX + x},${isoY + y}`]) return false;
+    }
+  }
+  return true;
 }
 function draw() {
   c.clearRect(0, 0, innerWidth, innerHeight);
@@ -117,12 +136,40 @@ function draw() {
   drawBuildings();
   if (selectedBuilding) {
     let [isoX, isoY] = mouseToIso(mouse.x, mouse.y).map(Math.floor);
-    if (mouse.down && !placedBuildings[`${isoX},${isoY}`]) {
-      placedBuildings[`${isoX},${isoY}`] = {type: selectedBuilding};
+    if (selectedBuilding === "_remove_") {
+      c.fillStyle = "rgba(255,0,0,0.3)";
+      c.beginPath();
+      c.moveTo(...isoToMouse(isoX, isoY));
+      c.lineTo(...isoToMouse(isoX + 1, isoY));
+      c.lineTo(...isoToMouse(isoX + 1, isoY + 1));
+      c.lineTo(...isoToMouse(isoX, isoY + 1));
+      c.fill();
+      let tile = placedBuildings[`${isoX},${isoY}`];
+      if (mouse.down && tile) {
+        if (tile.partOf) {
+          [isoX, isoY] = tile.partOf;
+          tile = placedBuildings[tile.partOf.join(",")];
+        }
+        for (let x = 0; x < buildings[tile.type].xSize; x++) {
+          for (let y = 0; y < buildings[tile.type].ySize; y++) {
+            delete placedBuildings[`${isoX + x},${isoY + y}`];
+          }
+        }
+      }
+    } else {
+      if (mouse.down && noBuildingsInWay(isoX, isoY, buildings[selectedBuilding].xSize, buildings[selectedBuilding].ySize)) {
+        placedBuildings[`${isoX},${isoY}`] = {type: selectedBuilding};
+        for (let x = 0; x < buildings[selectedBuilding].xSize; x++) {
+          for (let y = 0; y < buildings[selectedBuilding].ySize; y++) {
+            if (x === 0 && y === 0) continue;
+            placedBuildings[`${isoX + x},${isoY + y}`] = {partOf: [isoX, isoY]};
+          }
+        }
+      }
+      c.globalAlpha = 0.5;
+      drawBuilding(selectedBuilding, isoX, isoY);
+      c.globalAlpha = 1;
     }
-    c.globalAlpha = 0.5;
-    drawBuilding(selectedBuilding, isoX, isoY);
-    c.globalAlpha = 1;
   }
   window.requestAnimationFrame(draw);
 }
